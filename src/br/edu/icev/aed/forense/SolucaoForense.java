@@ -4,19 +4,88 @@ import java.io.*;
 
 public class SolucaoForense implements AnaliseForenseAvancada {
 
-        @Override
+    //Construtor Vazio
+    public SolucaoForense(){}
+
+
+    /**
+    * Desafio 1 (Pilha): Encontra sessões de usuário que foram corrompidas ou
+    * deixadas abertas, indicando uma possível falha ou ataque. Uma sessão é
+    * inválida se um usuário tenta um novo LOGIN antes de um LOGOUT, ou se a sessão
+    * termina sem um LOGOUT correspondente.
+    *
+    * @param caminhoArquivoCsv O caminho para o arquivo de logs.
+    * @return Um Set contendo os IDs de todas as sessões (SESSION_ID) inválidas.
+    * @throws IOException Se ocorrer um erro de leitura do arquivo.
+    */
+
+    @Override
     public Set<String> encontrarSessoesInvalidas(String caminhoArquivoCsv) throws IOException {
-        /**
-        * Desafio 1 (Pilha): Encontra sessões de usuário que foram corrompidas ou
-        * deixadas abertas, indicando uma possível falha ou ataque. Uma sessão é
-        * inválida se um usuário tenta um novo LOGIN antes de um LOGOUT, ou se a sessão
-        * termina sem um LOGOUT correspondente.
-        *
-        * @param caminhoArquivoCsv O caminho para o arquivo de logs.
-        * @return Um Set contendo os IDs de todas as sessões (SESSION_ID) inválidas.
-        * @throws IOException Se ocorrer um erro de leitura do arquivo.
-        */
-        throw new UnsupportedOperationException("Unimplemented method 'encontrarSessoesInvalidas'");
+        //Cria o leitor do arquivo de logs, e se não encontrar o arquivo lança IOException.
+        try (Scanner leitor = new Scanner(new File(caminhoArquivoCsv))){
+                
+            //Pula o cabeçalho.    
+            leitor.nextLine();
+
+            /* 
+            * Mapa que guarda as sessões ativas por usuário.
+            * Cada usuário tem sua própria pilha de sessões.
+            */
+            HashMap<String, Stack<String>> mapa = new HashMap<>();
+                
+            // Set que vai guardar as sessões inválidas para retornar
+            Set<String> invalidas = new HashSet<>();
+                
+            // Atributos que serão usados para temporariamente guardar os dados no loop de leitura
+            String userID, sessionID, actionType;
+                
+            // Pilha do usuario atual do loop de leitura
+            Stack<String> pilhaAtual;
+                
+            // Adiciona a virgula como um delimitador no leitor
+            leitor.useDelimiter(",|\n");
+                
+                
+            //Começo do Loop de cada linha dos logs
+            while(leitor.hasNext()){
+                // Timestamp, não será necessario
+                    leitor.next();
+            
+                // Guarda as informações úteis do loop
+                userID = leitor.next();
+                sessionID = leitor.next();
+                actionType = leitor.next();
+            
+                // Atribui pilhaAtual à pilha de sessões correspondente ao Usuario, e se ainda não existir cria uma nova.
+                pilhaAtual = mapa.computeIfAbsent(userID, k->new Stack<String>());
+                
+                // Recurso Alvo, não será necessário.
+                leitor.next();
+                // Grau de Severidade, não será necessário. 
+                leitor.next(); 
+                // Transito de Bytes, não será necessário.
+                leitor.next(); 
+            
+                switch (actionType) {
+                    case "LOGIN":
+                        //Logica de Login
+                        break;
+                
+                    case "LOGOUT":
+                        //Logica de Logout
+                        break;
+                    
+                    default:
+                        break;
+                }
+            }
+            //Lançamento de erro temporario para permitir testes, substituir por "return invalidas;" quando concluir.
+            throw new UnsupportedOperationException("Unimplemented method 'encontrarSessoesInvalidas'");
+        
+        
+        } catch (FileNotFoundException e){
+            throw new IOException("Arquivo não encontrado ", e);
+        }
     }
 
     @Override
