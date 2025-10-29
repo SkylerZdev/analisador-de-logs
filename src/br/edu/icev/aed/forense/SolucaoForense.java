@@ -22,16 +22,16 @@ public class SolucaoForense implements AnaliseForenseAvancada {
     @Override
     public Set<String> encontrarSessoesInvalidas(String caminhoArquivoCsv) throws IOException {
         //Cria o leitor do arquivo de logs, e se não encontrar o arquivo lança IOException.
-        try (Scanner leitor = new Scanner(new File(caminhoArquivoCsv))){
+        try (BufferedReader leitor = new BufferedReader(new FileReader(caminhoArquivoCsv))){
                 
             //Pula o cabeçalho.    
-            leitor.nextLine();
+            leitor.readLine();
 
             /* 
             * Mapa que guarda as sessões ativas por usuário.
             * Cada usuário tem sua própria pilha de sessões.
             */
-            HashMap<String, Stack<String>> mapa = new HashMap<>();
+            Map<String, Stack<String>> mapa = new HashMap<>();
                 
             // Set que vai guardar as sessões inválidas para retornar
             Set<String> invalidas = new HashSet<>();
@@ -42,47 +42,51 @@ public class SolucaoForense implements AnaliseForenseAvancada {
             // Pilha do usuario atual do loop de leitura
             Stack<String> pilhaAtual;
                 
-            // Adiciona a virgula como um delimitador no leitor
-            leitor.useDelimiter(",|\n");
-                
-                
+            //String pra guardar a linha atual do leitor
+            String linha;
+
             //Começo do Loop de cada linha dos logs
-            while(leitor.hasNext()){
-                // Timestamp, não será necessario
-                    leitor.next();
-            
-                // Guarda as informações úteis do loop
-                userID = leitor.next();
-                sessionID = leitor.next();
-                actionType = leitor.next();
-            
-                // Atribui pilhaAtual à pilha de sessões correspondente ao Usuario, e se ainda não existir cria uma nova.
-                pilhaAtual = mapa.computeIfAbsent(userID, k->new Stack<String>());
+            while((linha = leitor.readLine()) != null){
+                 int c1 = linha.indexOf(',');
+                 int c2 = linha.indexOf(',', c1 + 1);
+                 int c3 = linha.indexOf(',', c2 + 1);
+                 int c4 = linha.indexOf(',', c3 + 1);
+                         
+                userID     = linha.substring(c1 + 1, c2);
+                sessionID  = linha.substring(c2 + 1, c3);
+                actionType = linha.substring(c3 + 1, c4);
                 
-                // Recurso Alvo, não será necessário.
-                leitor.next();
-                // Grau de Severidade, não será necessário. 
-                leitor.next(); 
-                // Transito de Bytes, não será necessário.
-                leitor.next(); 
+                pilhaAtual = mapa.computeIfAbsent(userID, k -> new Stack<>());
             
                 switch (actionType) {
                     case "LOGIN":
-                        //Logica de Login
+                        //Se o usuario tiver sessões ativas quando o Login é realizado a sessão é adicionada às invalidas
+                        if(!pilhaAtual.isEmpty()){
+                            invalidas.add(sessionID);
+                        } 
+                        //Adiciona a sessão às sessões ativas do usuário
+                        pilhaAtual.push(sessionID);
                         break;
                 
                     case "LOGOUT":
-                        //Logica de Logout
+                        //Guarda a ultima sessão ativa em topo, guardando null se não houver sessão ativa.
+                        String topo = pilhaAtual.isEmpty() ? null : pilhaAtual.pop();
+                        //
+                        if(topo == null || !topo.equals(sessionID)){
+                            invalidas.add(sessionID);
+                        }
                         break;
-                    
+
                     default:
                         break;
                 }
             }
-            //Lançamento de erro temporario para permitir testes, substituir por "return invalidas;" quando concluir.
-            throw new UnsupportedOperationException("Unimplemented method 'encontrarSessoesInvalidas'");
-        
-        
+
+            for (Stack<String> pilha : mapa.values()) {
+                invalidas.addAll(pilha);
+            }
+            return invalidas;
+
         } catch (FileNotFoundException e){
             throw new IOException("Arquivo não encontrado ", e);
         }
