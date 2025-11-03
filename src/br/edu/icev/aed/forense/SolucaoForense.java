@@ -1,5 +1,6 @@
 package br.edu.icev.aed.forense;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.io.*;
 
 public class SolucaoForense implements AnaliseForenseAvancada {
@@ -93,7 +94,7 @@ public class SolucaoForense implements AnaliseForenseAvancada {
     }
 
     @Override
-     public List<String> reconstruirLinhaTempo(String caminhoArquivoCsv, String sessionId) throws IOException {
+    public List<String> reconstruirLinhaTempo(String caminhoArquivoCsv, String sessionId) throws IOException {
         /**
         * Desafio 2 (Fila): Reconstrói a sequência exata de ações de um usuário dentro
         * de uma sessão específica, da primeira à última ação.
@@ -105,7 +106,37 @@ public class SolucaoForense implements AnaliseForenseAvancada {
         *         for encontrada.
         * @throws IOException Se ocorrer um erro de leitura do arquivo.
         */
-        throw new UnsupportedOperationException("Unimplemented method 'reconstruirLinhaTempo'");
+
+        // Estrutura FIFO thread-safe
+        Queue<String> fila = new ConcurrentLinkedQueue<>();
+
+        //Cria o leitor do arquivo de logs, e se não encontrar o arquivo lança IOException.
+        try (BufferedReader leitor = new BufferedReader(new FileReader(caminhoArquivoCsv))) {
+        
+        // Pula o cabeçalho
+        leitor.readLine();
+
+        //String pra guardar a linha atual do leitor
+        String linha;
+        while ((linha = leitor.readLine()) != null) {
+            String[] partes = linha.split(",");
+
+            // Quarta Coluna
+            if (partes.length < 4) continue;
+
+            String SESSIONID = partes[2].trim();
+            String actionType = partes[3].trim();
+
+            // Pega apenas o sessionId desejado
+            if (!SESSIONID.equals(sessionId)) continue;
+            fila.add(actionType);
+            
+        }
+    } catch (FileNotFoundException e) {
+        throw new IOException("Arquivo não encontrado", e);
+    }
+     //Retorna como LinkedList 
+     return new LinkedList<>(fila);
     }
 
     @Override
