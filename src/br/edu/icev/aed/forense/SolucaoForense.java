@@ -153,7 +153,43 @@ public class SolucaoForense implements AnaliseForenseAvancada {
         *         ordem não importa.
         * @throws IOException Se ocorrer um erro de leitura do arquivo.
         */
-        throw new UnsupportedOperationException("Unimplemented method 'priorizarAlertas'");
+        //Cria o leitor do arquivo de logs, e se não encontrar o arquivo lança IOException.
+        try (BufferedReader leitor = new BufferedReader(new FileReader(caminhoArquivoCsv))){
+            List<Alerta> ListaAlerta = new ArrayList<>();
+
+            int severity_level;
+
+            long timestamp, bytes_transferred;
+               
+            String userID, sessionID, actionType, linha, recurso;
+
+//Começo do Loop de cada linha dos logs
+while ((linha = leitor.readLine()) != null) {
+    int c1 = linha.indexOf(',');
+    int c2 = linha.indexOf(',', c1 + 1);
+    int c3 = linha.indexOf(',', c2 + 1);
+    int c4 = linha.indexOf(',', c3 + 1);
+    int c5 = linha.indexOf(',', c4 + 1);
+    int c6 = linha.indexOf(',', c5 + 1);
+
+    // Extrai cada campo da linha
+     userID           = linha.substring(0, c1);
+     sessionID        = linha.substring(c1 + 1, c2);
+     actionType       = linha.substring(c2 + 1, c3);
+     timestamp          = Long.parseLong(linha.substring(c3 + 1, c4));
+     bytes_transferred  = Long.parseLong(linha.substring(c4 + 1, c5));
+     severity_level      = Integer.parseInt(linha.substring(c5 + 1, c6));
+     recurso          = linha.substring(c6 + 1);
+
+     Alerta alerta = new Alerta(timestamp, userID, sessionID, actionType, recurso, severity_level ,bytes_transferred);
+
+    ListaAlerta.add(alerta);
+}
+            return ListaAlerta;
+        }
+            catch (FileNotFoundException e){
+            throw new IOException("Arquivo não encontrado ", e);
+        }
     }
 
     @Override
