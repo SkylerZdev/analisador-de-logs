@@ -141,56 +141,75 @@ public class SolucaoForense implements AnaliseForenseAvancada {
 
     @Override
     public List<Alerta> priorizarAlertas(String caminhoArquivoCsv, int n) throws IOException {
-        /**
-        * Desafio 3 (Fila de Prioridade): Identifica os N eventos de maior risco de
-        * acordo com a equipe de resposta a incidentes. O risco é determinado pelo
-        * campo SEVERITY_LEVEL.
-        *
-        * @param caminhoArquivoCsv O caminho para o arquivo de logs.
-        * @param n                 O número de eventos de risco a serem retornados.
-        * @return Uma List<Alerta> contendo os 'n' alertas mais severos, ordenados do
-        *         mais severo para o menos severo. Em caso de mesma severidade, a
-        *         ordem não importa.
-        * @throws IOException Se ocorrer um erro de leitura do arquivo.
-        */
+        
+        if (n <= 0){
+            return new ArrayList<>();
+        }
         //Cria o leitor do arquivo de logs, e se não encontrar o arquivo lança IOException.
         try (BufferedReader leitor = new BufferedReader(new FileReader(caminhoArquivoCsv))){
-            List<Alerta> ListaAlerta = new ArrayList<>();
 
-            int severity_level;
+            leitor.readLine();
 
-            long timestamp, bytes_transferred;
-               
-            String userID, sessionID, actionType, linha, recurso;
+            List<Alerta> listaAlerta = new ArrayList<>(n);
+            Map<Integer, List<Alerta>> mapa = new HashMap<>();
 
-//Começo do Loop de cada linha dos logs
-while ((linha = leitor.readLine()) != null) {
-    int c1 = linha.indexOf(',');
-    int c2 = linha.indexOf(',', c1 + 1);
-    int c3 = linha.indexOf(',', c2 + 1);
-    int c4 = linha.indexOf(',', c3 + 1);
-    int c5 = linha.indexOf(',', c4 + 1);
-    int c6 = linha.indexOf(',', c5 + 1);
+            int                                      severity_level;
+            long                       timestamp, bytes_transferred;
+            String    userID, sessionID, actionType, linha, recurso;
 
-    // Extrai cada campo da linha
-     userID           = linha.substring(0, c1);
-     sessionID        = linha.substring(c1 + 1, c2);
-     actionType       = linha.substring(c2 + 1, c3);
-     timestamp          = Long.parseLong(linha.substring(c3 + 1, c4));
-     bytes_transferred  = Long.parseLong(linha.substring(c4 + 1, c5));
-     severity_level      = Integer.parseInt(linha.substring(c5 + 1, c6));
-     recurso          = linha.substring(c6 + 1);
+            //Começo do Loop de cada linha dos logs
+            while ((linha = leitor.readLine()) != null) {
+                
+                int c1 =   linha.indexOf(',');
+                int c2 =   linha.indexOf(',', c1 + 1);
+                int c3 =   linha.indexOf(',', c2 + 1);
+                int c4 =   linha.indexOf(',', c3 + 1);
+                int c5 =   linha.indexOf(',', c4 + 1);
+                int c6 =   linha.indexOf(',', c5 + 1);
+            
+                // Extrai cada campo da linha
+                 timestamp         = Long.parseLong(linha.substring(0, c1));
+                 userID            = linha.substring(c1 + 1, c2);
+                 sessionID         = linha.substring(c2 + 1, c3);
+                 actionType        = linha.substring(c3 + 1, c4);
+                 recurso           = linha.substring(c4 + 1, c5);
+                 severity_level    = Integer.parseInt(linha.substring(c5 + 1, c6));
+                 bytes_transferred = Long.parseLong(linha.substring(c6 + 1));
+                
+                 //Criação do Alerta
+                 Alerta alerta = new Alerta (
+                                timestamp, userID, sessionID, actionType,
+                                recurso, severity_level, bytes_transferred
+                            );
+            
+                //Adiciona o Alerta em sua devida lista, de acordo com seu Severity_Level.
+                mapa.computeIfAbsent(severity_level, k-> new ArrayList<>()).add(alerta);
+            }
+            
+            if(mapa.isEmpty()){
+                return new ArrayList<>();
+            }
+            int grau = 10;
+            while(listaAlerta.size() < n && grau > 0){
+                List<Alerta> listaDoGrau = mapa.get(grau); if(listaDoGrau==null) { grau--; continue; }
+                
+                if(n-listaAlerta.size()>= listaDoGrau.size()){
+                        listaAlerta.addAll(listaDoGrau);
+                }   else {
+                        listaAlerta.addAll(listaDoGrau.subList(0, n-listaAlerta.size()));
+                }
 
-     Alerta alerta = new Alerta(timestamp, userID, sessionID, actionType, recurso, severity_level ,bytes_transferred);
+                grau --;
+            }
 
-    ListaAlerta.add(alerta);
-}
-            return ListaAlerta;
-        }
-            catch (FileNotFoundException e){
+            return listaAlerta;
+
+
+        }   catch (FileNotFoundException e){
             throw new IOException("Arquivo não encontrado ", e);
         }
     }
+
 
     @Override
     public Map<Long, Long> encontrarPicosTransferencia(String caminhoArquivoCsv) throws IOException {
