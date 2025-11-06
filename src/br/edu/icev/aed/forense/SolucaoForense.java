@@ -1,6 +1,5 @@
 package br.edu.icev.aed.forense;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.io.*;
 
 public class SolucaoForense implements AnaliseForenseAvancada {
@@ -107,8 +106,8 @@ public class SolucaoForense implements AnaliseForenseAvancada {
         * @throws IOException Se ocorrer um erro de leitura do arquivo.
         */
 
-        // Estrutura FIFO thread-safe
-        Queue<String> fila = new ConcurrentLinkedQueue<>();
+
+        List<String> fila = new LinkedList<>();
 
         //Cria o leitor do arquivo de logs, e se não encontrar o arquivo lança IOException.
         try (BufferedReader leitor = new BufferedReader(new FileReader(caminhoArquivoCsv))) {
@@ -120,8 +119,9 @@ public class SolucaoForense implements AnaliseForenseAvancada {
 
         //String pra guardar a linha atual do leitor
         String linha;
+
         while ((linha = leitor.readLine()) != null) {
-            
+
             int c1 = linha.indexOf(',');
             int c2 = linha.indexOf(',', c1 + 1);
             int c3 = linha.indexOf(',', c2 + 1);
@@ -135,11 +135,12 @@ public class SolucaoForense implements AnaliseForenseAvancada {
             fila.add(actionType);
             
         }
-    } catch (FileNotFoundException e) {
-        throw new IOException("Arquivo não encontrado", e);
-    }
-     //Retorna como LinkedList 
-     return new LinkedList<>(fila);
+        //Retorna como LinkedList 
+        return fila;
+
+        }catch (FileNotFoundException e) {
+            throw new IOException("Arquivo não encontrado", e);
+        }
     }
 
     @Override
