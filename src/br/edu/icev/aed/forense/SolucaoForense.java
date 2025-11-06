@@ -116,16 +116,19 @@ public class SolucaoForense implements AnaliseForenseAvancada {
         // Pula o cabeçalho
         leitor.readLine();
 
+        String SESSIONID, actionType;
+
         //String pra guardar a linha atual do leitor
         String linha;
         while ((linha = leitor.readLine()) != null) {
-            String[] partes = linha.split(",");
-
-            // Quarta Coluna
-            if (partes.length < 4) continue;
-
-            String SESSIONID = partes[2].trim();
-            String actionType = partes[3].trim();
+            
+            int c1 = linha.indexOf(',');
+            int c2 = linha.indexOf(',', c1 + 1);
+            int c3 = linha.indexOf(',', c2 + 1);
+            int c4 = linha.indexOf(',', c3 + 1);
+                         
+            SESSIONID  = linha.substring(c2 + 1, c3);
+            actionType = linha.substring(c3 + 1, c4);
 
             // Pega apenas o sessionId desejado
             if (!SESSIONID.equals(sessionId)) continue;
