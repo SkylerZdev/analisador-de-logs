@@ -213,19 +213,63 @@ public class SolucaoForense implements AnaliseForenseAvancada {
 
     @Override
     public Map<Long, Long> encontrarPicosTransferencia(String caminhoArquivoCsv) throws IOException {
-        /**
-        * Desafio 4 (Pilha Monotônica): Detecta anomalias em transferências de dados.
-        * Para cada evento de transferência, encontra o próximo evento no tempo que
-        * envolveu uma transferência de dados MAIOR. Isso ajuda a identificar
-        * escalonamentos súbitos na exfiltração de dados.
-        *
-        * @param caminhoArquivoCsv O caminho para o arquivo de logs.
-        * @return Um Map<Long, Long> onde a chave é o TIMESTAMP de um evento e o valor
-        *         é o TIMESTAMP do próximo evento com BYTES_TRANSFERRED maior. Se não
-        *         houver evento maior subsequente, a chave não deve estar no mapa.
-        * @throws IOException Se ocorrer um erro de leitura do arquivo.
-        */
-        throw new UnsupportedOperationException("Unimplemented method 'encontrarPicosTransferencia'");
+        try (BufferedReader leitor = new BufferedReader(new FileReader(caminhoArquivoCsv))){
+
+            leitor.readLine();
+
+            Stack<String> leitorInv = new Stack<>();
+            Stack<Map.Entry<Long,Long>> pilha = new Stack<>();
+            Map<Long, Long> mapa = new HashMap<>();
+
+            long  timestamp, bytes_transferred;
+            String linha;
+
+            while ((linha = leitor.readLine()) != null){
+                int c1 =   linha.indexOf(',');
+                int c2 =   linha.indexOf(',', c1 + 1);
+                int c3 =   linha.indexOf(',', c2 + 1);
+                int c4 =   linha.indexOf(',', c3 + 1);
+                
+                if (!linha.substring(c3+1, c4).equals("DATA_TRANSFER")){ continue; }
+
+                leitorInv.push(linha);
+            }
+
+            //Começo do Loop Invertido
+            while (!leitorInv.isEmpty()) {
+                linha = leitorInv.pop();
+                
+                int c1 =   linha.indexOf(',');
+                int c2 =   linha.indexOf(',', c1 + 1);
+                int c3 =   linha.indexOf(',', c2 + 1);
+                int c4 =   linha.indexOf(',', c3 + 1);
+                int c5 =   linha.indexOf(',', c4 + 1);
+                int c6 =   linha.indexOf(',', c5 + 1);
+            
+                // Extrai cada campo da linha
+                 timestamp         = Long.parseLong(linha.substring(0, c1));
+                 bytes_transferred = Long.parseLong(linha.substring(c6 + 1));
+
+                 while (!pilha.isEmpty() && pilha.peek().getValue() < bytes_transferred){
+                    pilha.pop();
+                 }
+                 
+                 if (!pilha.isEmpty()){
+                    mapa.put(timestamp, pilha.peek().getKey());
+                 }
+                 
+                 pilha.push(new AbstractMap.SimpleEntry<>(timestamp, bytes_transferred));
+            
+
+            }
+            
+            return mapa;
+
+        }
+         catch (FileNotFoundException e){
+            throw new IOException("Arquivo não encontrado ", e);
+        }
+        
     }
 
     @Override
