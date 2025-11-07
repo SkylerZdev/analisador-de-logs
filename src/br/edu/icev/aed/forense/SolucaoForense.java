@@ -291,9 +291,113 @@ public class SolucaoForense implements AnaliseForenseAvancada {
         *         o caminho mais curto. Retorna Optional.empty() se não houver caminho.
         * @throws IOException Se ocorrer um erro de leitura do arquivo.
         */
-        throw new UnsupportedOperationException("Unimplemented method 'rastrearContaminacao'");
-    }
 
+        //Cria o leitor do arquivo de logs, e se não encontrar o arquivo lança IOException.
+
+        try (BufferedReader leitor = new BufferedReader(new FileReader(caminhoArquivoCsv))){
+
+            leitor.readLine();
+
+            Map<String, Vertice> anteriores = new HashMap<>();
+            Map<Vertice, Set<Vertice>> grafo = new HashMap<>();
+            Queue<Vertice> filaBusca = new LinkedList<>();
+            Map<Vertice, Vertice> grafoKeys = new HashMap<>();
+            List<String> resultado = new ArrayList<>();
+
+            
+            String linha;
+
+            if(recursoInicial.equals(recursoAlvo)){
+                while((linha = leitor.readLine()) != null) {
+                    int c1 =   linha.indexOf(',');
+                    int c2 =   linha.indexOf(',', c1 + 1);
+                    int c3 =   linha.indexOf(',', c2 + 1);
+                    int c4 =   linha.indexOf(',', c3 + 1);
+                    int c5 =   linha.indexOf(',', c4 + 1);
+                
+                    // Extrai cada campo da linha
+                    final String recurso       = linha.substring(c4 + 1, c5);
+                    
+                    if(recurso.equals(recursoInicial)){
+                        resultado.add(recursoInicial);
+                        return Optional.of(resultado);
+                    }
+                }
+                return Optional.empty();
+            }
+
+            //Começo do Loop de cada linha dos logs
+            while ((linha = leitor.readLine()) != null) {
+                
+                int c1 =   linha.indexOf(',');
+                int c2 =   linha.indexOf(',', c1 + 1);
+                int c3 =   linha.indexOf(',', c2 + 1);
+                int c4 =   linha.indexOf(',', c3 + 1);
+                int c5 =   linha.indexOf(',', c4 + 1);
+            
+                // Extrai cada campo da linha
+                final String sessionID     = linha.substring(c2 + 1, c3);
+                final String recurso       = linha.substring(c4 + 1, c5);
+                
+                
+                //Criação ou Atribuição do Vertice
+                Vertice v = grafoKeys.computeIfAbsent(
+                    new Vertice(sessionID, recurso, false),
+                    k-> new Vertice(sessionID, recurso, false)
+                );
+
+                //Adiciona o vertice à fila de busca se for o recurso inicial
+                if(v.recurso.equals(recursoInicial) && !v.entrouBusca){
+                    v.entrouBusca = true;
+                    v.distancia = 0;
+                    v.origem = null;
+                    filaBusca.add(v);
+                }
+
+                //Coloca o vertice no grafo
+                grafo.computeIfAbsent(v, k-> new HashSet<>());
+                
+                Vertice anterior = anteriores.get(sessionID);
+                if(anterior != null && !anterior.equals(v)){
+                    grafo.get(anterior).add(v);
+                }
+
+                anteriores.put(sessionID, v);
+            }
+        
+
+            //Lógica de Busca em Largura (BFS)
+            while(!filaBusca.isEmpty()){
+                Vertice atual = filaBusca.poll();
+
+                if(atual.recurso.equals(recursoAlvo)){
+                    //Reconstrução do Caminho
+                    Vertice caminho = atual;
+                    while(caminho != null){
+                        resultado.add(0, caminho.recurso);
+                        caminho = caminho.origem;
+                    }
+                    return Optional.of(resultado);
+                }
+                for(Vertice vizinho : grafo.get(atual)){
+                    if(!vizinho.entrouBusca){
+                        vizinho.entrouBusca = true;
+                        vizinho.distancia = atual.distancia + 1;
+                        vizinho.origem = atual;
+                        filaBusca.add(vizinho);
+                    }
+                }   
+            }   
+            
+            if(resultado.isEmpty()){
+                return Optional.empty();
+            }
+            return Optional.of(resultado);
+
+        }catch (FileNotFoundException e) {
+            throw new IOException("Arquivo não encontrado ", e);
+        }
+    }
 
 
 }
