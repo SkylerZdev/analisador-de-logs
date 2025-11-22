@@ -259,7 +259,7 @@ public class SolucaoForense implements AnaliseForenseAvancada {
                  }
                  
                  if (!pilha.isEmpty()){
-                    mapa.put(timestamp, pilha.peek().getKey());
+                    mapa.put(timestamp, pilha.peek().getValue());
                  }
                  
                  pilha.push(new AbstractMap.SimpleEntry<>(timestamp, bytes_transferred));
